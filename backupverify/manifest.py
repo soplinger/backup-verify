@@ -29,11 +29,16 @@ def build_manifest(root: Path) -> dict:
 
 
 def save_manifest(manifest: dict, out: Path) -> None:
-    out.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    """Write to a temporary file, then replace, so an interrupted run cannot corrupt an old manifest."""
+    tmp = out.with_name(out.name + ".tmp")
+    tmp.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.replace(out)
 
 
 def load_manifest(path: Path) -> dict:
     manifest = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict) or not isinstance(manifest.get("files"), dict):
+        raise ValueError("manifest must be an object with a 'files' object")
     if manifest.get("version") != MANIFEST_VERSION:
         raise ValueError(f"unsupported manifest version: {manifest.get('version')!r}")
     return manifest

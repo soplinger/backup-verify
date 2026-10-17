@@ -23,17 +23,17 @@ def main(argv: list) -> int:
     if not root.is_dir():
         print(f"not a directory: {root}", file=sys.stderr)
         return 2
-    if command == "create":
-        manifest = build_manifest(root)
-        save_manifest(manifest, manifest_path)
-        print(f"wrote {len(manifest['files'])} file(s) to {manifest_path}")
-        return 0
     try:
+        if command == "create":
+            manifest = build_manifest(root)
+            save_manifest(manifest, manifest_path)
+            print(f"wrote {len(manifest['files'])} file(s) to {manifest_path}")
+            return 0
         manifest = load_manifest(manifest_path)
+        report = verify(root, manifest)
     except (OSError, ValueError) as e:
-        print(f"cannot read manifest: {e}", file=sys.stderr)
+        print(f"{command} failed: {e}", file=sys.stderr)
         return 2
-    report = verify(root, manifest)
     print(
         f"ok: {len(report.ok)}  changed: {len(report.changed)}  "
         f"missing: {len(report.missing)}  new: {len(report.new)}"

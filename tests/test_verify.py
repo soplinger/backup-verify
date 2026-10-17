@@ -86,6 +86,26 @@ class CliTests(unittest.TestCase):
         self.assertEqual(main(["backupverify"]), 2)
         self.assertEqual(main(["backupverify", "verify", "/no/such/dir", str(self.manifest)]), 2)
 
+    def test_malformed_manifest_exits_2(self):
+        self.manifest.write_text("[]", encoding="utf-8")
+        self.assertEqual(self.run_cli("verify", str(self.root), str(self.manifest))[0], 2)
+        self.manifest.write_text("{not json", encoding="utf-8")
+        self.assertEqual(self.run_cli("verify", str(self.root), str(self.manifest))[0], 2)
+
+    def test_unreadable_file_exits_2_not_1(self):
+        self.run_cli("create", str(self.root), str(self.manifest))
+        blocked = self.root / "a.txt"
+        blocked.chmod(0)
+        try:
+            code, _ = self.run_cli("verify", str(self.root), str(self.manifest))
+        finally:
+            blocked.chmod(0o644)
+        self.assertEqual(code, 2)
+
+    def test_create_leaves_no_temp_file(self):
+        self.run_cli("create", str(self.root), str(self.manifest))
+        self.assertFalse(self.manifest.with_name(self.manifest.name + ".tmp").exists())
+
 
 if __name__ == "__main__":
     unittest.main()
